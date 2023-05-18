@@ -14,10 +14,10 @@ class MaskedCNN(nn.Conv2d):
         self.register_buffer('mask', self.weight.data.clone())
         _, _, height, width = self.weight.size()
         self.mask.fill_(1)
-        if mask_type == 'A':
+        if mask_type == 'A': # zero out the weights in the bottom right part of the filters, including the center pixel.
             self.mask[:, :, height//2, width//2:] = 0
             self.mask[:, :, height//2+1:, :] = 0
-        else:
+        else: # zero out the weights in the bottom right part of the filters, excluding the center pixel.
             self.mask[:, :, height//2, width//2+1:] = 0
             self.mask[:, :, height//2+1:, :] = 0
 
@@ -33,13 +33,43 @@ class PixelCNN(nn.Module):
 
     def __init__(self):
         super(PixelCNN, self).__init__()
+        
+        # Block 1
+        self.conv1 = MaskedCNN(in_channels=1, out_channels= 16, kernel_size=3, stride=1, dilation=3, padding_mode='reflect', mask_type='A')
+        self.bn1 = nn.BatchNorm2d(16)
+        self.relu1 = nn.LeakyReLU(negative_slope=0.001)
+        
+        # Block 2
+        self.conv2 = MaskedCNN(in_channels=16, out_channels= 16, kernel_size=3, stride=1, dilation=3, padding_mode='reflect', mask_type='B')
+        self.bn2 = nn.BatchNorm2d(16)
+        self.relu2 = nn.LeakyReLU(negative_slope=0.001)
+        
+        # Block 3
+        self.conv3 = MaskedCNN(in_channels=16, out_channels= 16, kernel_size=3, stride=1, dilation=3, padding_mode='reflect', mask_type='B')
+        self.bn3 = nn.BatchNorm2d(16)
+        self.relu3 = nn.LeakyReLU(negative_slope=0.001)
 
-        # WRITE CODE HERE TO IMPLEMENT THE MODEL STRUCTURE
-
-        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=1)
+        # 1x1 Convolution Layer
+        self.conv4 = nn.Conv2d(16, 1, kernel_size=1, stride=1, padding=9, bias=True)
         self.sigmoid = nn.Sigmoid()
+
 
     def forward(self, x):
 
-        # WRITE CODE HERE TO IMPLEMENT THE FORWARD PASS
-        return self.conv(self.sigmoid(x))
+        # Block 1
+        # print(x.shape)
+        x = self.relu1(self.bn1(self.conv1(x)))
+        # print(x.shape)
+        # Block 2
+        x = self.relu2(self.bn2(self.conv2(x)))
+        # print(x.shape)
+        # Block 3
+        x = self.relu3(self.bn3(self.conv3(x)))
+        # print(x.shape)
+        # 1x1 Convolution Layer
+        x = self.conv4(x)
+        # print(x.shape)
+        # Sigmoid Activation
+        x = self.sigmoid(x)
+        # print(x.shape)
+        return x

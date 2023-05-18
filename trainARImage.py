@@ -71,6 +71,19 @@ def trainARImage(train_dataset_path, val_dataset_path, verbose=False, data_npy_e
         val_loss = 0
         model.train()
         for i, batch in enumerate(data_loader):
+            batch = batch[0].to(device)
+
+            # Forward pass
+            output = model(batch)
+        
+            # Compute L1 loss
+            loss = criterion(output, batch)
+            train_loss += loss.item()
+        
+            # Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
             
              # WRITE CODE HERE TO IMPLEMENT 
              # THE FORWARD PASS AND BACKPROPAGATION
@@ -81,6 +94,9 @@ def trainARImage(train_dataset_path, val_dataset_path, verbose=False, data_npy_e
 
         # WRITE CODE HERE TO EVALUATE THE LOSS ON THE VALIDATION DATASET
         model.eval()
+        with torch.no_grad():
+            val_output = model(val_imgs)
+            val_loss = criterion(val_output, val_imgs).item()
 
         # show the plots
         if epoch != 0:            
@@ -105,3 +121,5 @@ def trainARImage(train_dataset_path, val_dataset_path, verbose=False, data_npy_e
         plt.savefig("error-plot.png")
 
     return model, info
+
+
