@@ -57,7 +57,7 @@ def trainARImage(train_dataset_path, val_dataset_path, verbose=False, data_npy_e
     model     = PixelCNN().to(device)
     criterion = nn.L1Loss()
     learningRate = 0.001 
-    numEpochs    = 20
+    numEpochs    = 40
     weightDecay  = 0.001
     batch_size   = 64
     optimizer    = torch.optim.AdamW(model.parameters(), lr=learningRate, weight_decay=weightDecay)
@@ -84,10 +84,6 @@ def trainARImage(train_dataset_path, val_dataset_path, verbose=False, data_npy_e
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            
-             # WRITE CODE HERE TO IMPLEMENT 
-             # THE FORWARD PASS AND BACKPROPAGATION
-             # FOR EACH PASS ALONG WITH THE L1 LOSS COMPUTATION
 
             if verbose:
                 print('Epoch [%d/%d], Iter [%d/%d], Training loss: %.4f' %(epoch+1, numEpochs, i+1, len(train_imgs)//batch_size, train_loss/(i+1)))

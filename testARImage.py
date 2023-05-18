@@ -4,7 +4,7 @@ from torch.autograd import Variable
 from data_utils import *  
 
 def testARImage(test_dataset_path, model, info, verbose=True):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")    
+    device = torch.device("cpu" if torch.cuda.is_available() else "cpu")    
     model.to(device)
     model.eval()
     
@@ -40,6 +40,17 @@ def testARImage(test_dataset_path, model, info, verbose=True):
 
         # WRITE CODE HERE TO FIX THE DESTROYED IMAGE REGION
         # USING AN AUTOREGRESSIVE APPROACH
+        # FIX THE DESTROYED IMAGE REGION USING AN AUTOREGRESSIVE APPROACH
+        for i in range(destroy_part_x1, destroy_part_x2):
+            for j in range(destroy_part_y1, destroy_part_y2):
+                # Skip pixels outside the distorted region
+                if i < destroy_part_x1 or i >= destroy_part_x2 or j < destroy_part_y1 or j >= destroy_part_y2:
+                    continue
+
+                # Predict the pixel value using autoregressive approach
+                # print(rec_im.shape)
+                output_patch = model(rec_im)
+                rec_im[:, :, i, j] = output_patch[:, :, i, j]  # Use center pixel for prediction
 
         # measure the reconstruction error        
         diff_im = rec_im[0, 0, destroy_part_x1:destroy_part_x2, destroy_part_y1:destroy_part_y2] - im[0,  destroy_part_x1:destroy_part_x2, destroy_part_y1:destroy_part_y2]
@@ -51,7 +62,7 @@ def testARImage(test_dataset_path, model, info, verbose=True):
         rec_im = rec_im.squeeze()
         rec_im = rec_im.cpu().detach().numpy()
         final_img = Image.fromarray(np.uint8(rec_im *255.))
-        final_img.save(f'{test_image_names[s][:-4]}-rec.jpg', quality=100)
+        final_img.save('results/' + f'{test_image_names[s][:-4]}-rec.jpg', quality=100)
         
     avg_rec_error = rec_error / num_test_images
     print('Avg rec error %f \n'%(avg_rec_error))
